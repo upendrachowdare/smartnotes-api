@@ -19,6 +19,7 @@ namespace SmartNotes.Api.Services
         private readonly IJobApplyService _apply;
         private readonly ILogger<JobPoller> _logger;
         private readonly TimeSpan _interval;
+        private readonly double _threshold;
 
         public JobPoller(IEnumerable<IJobSource> sources, IJobMatcher matcher, IOpenAiService ai, IJobApplyService apply, IConfiguration config, ILogger<JobPoller> logger)
         {
@@ -30,6 +31,8 @@ namespace SmartNotes.Api.Services
 
             if (!int.TryParse(config["JobPollIntervalMinutes"], out var minutes)) minutes = 20;
             _interval = TimeSpan.FromMinutes(minutes);
+
+            if (!double.TryParse(config["JobMatch:Threshold"], out _threshold)) _threshold = 0.8;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -55,7 +58,7 @@ namespace SmartNotes.Api.Services
                         var score = _matcher.Score(job);
                         _logger.LogInformation("Job {title} scored {score}", job.Title, score);
 
-                        if (score >= 0.8)
+                        if (score >= _threshold)
                         {
                             var cover = await _ai.GenerateCoverLetterAsync(job);
                             // For now, do semi-automatic: log and store, and attempt apply via configured connector
