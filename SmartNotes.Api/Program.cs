@@ -37,6 +37,8 @@ builder.Services.AddSingleton<IJobSource>(sp => sp.GetRequiredService<IRssJobSou
 
 // Use approval apply service that saves attempts and sends email
 builder.Services.AddSingleton<IJobApplyService, ApprovalJobApplyService>();
+// Provider specific apply services (placeholders)
+builder.Services.AddSingleton<IProviderApplyService, GreenhouseApplyService>();
 
 // Configure poll interval in appsettings: JobPollIntervalMinutes (default 20)
 

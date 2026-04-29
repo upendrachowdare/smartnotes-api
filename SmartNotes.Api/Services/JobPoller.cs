@@ -21,13 +21,16 @@ namespace SmartNotes.Api.Services
         private readonly TimeSpan _interval;
         private readonly double _threshold;
 
-        public JobPoller(IEnumerable<IJobSource> sources, IJobMatcher matcher, IOpenAiService ai, IJobApplyService apply, IConfiguration config, ILogger<JobPoller> logger)
+        private readonly SmartNotes.Api.Data.SmartNotesContext _db;
+
+        public JobPoller(IEnumerable<IJobSource> sources, IJobMatcher matcher, IOpenAiService ai, IJobApplyService apply, IConfiguration config, ILogger<JobPoller> logger, SmartNotes.Api.Data.SmartNotesContext db)
         {
             _sources = sources;
             _matcher = matcher;
             _ai = ai;
             _apply = apply;
             _logger = logger;
+            _db = db;
 
             if (!int.TryParse(config["JobPollIntervalMinutes"], out var minutes)) minutes = 20;
             _interval = TimeSpan.FromMinutes(minutes);
@@ -50,6 +53,26 @@ namespace SmartNotes.Api.Services
                         var fetched = await src.FetchAsync();
                         jobs.AddRange(fetched);
                     }
+
+                    // Persist fetched jobs to database if new or updated
+                    foreach (var job in jobs)
+                    {
+                        var existing = await _db.JobPostings.FindAsync(job.Id);
+                        if (existing == null)
+                        {
+                            _db.JobPostings.Add(job);
+                        }
+                        else
+                        {
+                            existing.Title = job.Title;
+                            existing.Company = job.Company;
+                            existing.Location = job.Location;
+                            existing.Description = job.Description;
+                            existing.Url = job.Url;
+                            existing.PostedAt = job.PostedAt;
+                        }
+                    }
+                    await _db.SaveChangesAsync();
 
                     _logger.LogInformation("Fetched {count} jobs", jobs.Count);
 
