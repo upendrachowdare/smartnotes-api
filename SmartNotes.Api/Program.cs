@@ -12,6 +12,11 @@ builder.Services.AddSwaggerGen();
 
 // HttpClient-backed OpenAI service (reads OPENAI_API_KEY or OpenAI:ApiKey)
 builder.Services.AddHttpClient<IOpenAiService, OpenAiService>();
+// LinkedIn HTTP client uses named client to include default headers if needed
+builder.Services.AddHttpClient<ILinkedInService, LinkedInService>();
+
+// Background service to create and post daily LinkedIn posts
+builder.Services.AddHostedService<DailyLinkedInPoster>();
 
 var app = builder.Build();
 
