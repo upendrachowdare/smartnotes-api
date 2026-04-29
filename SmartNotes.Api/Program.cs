@@ -20,6 +20,8 @@ builder.Services.AddHostedService<DailyLinkedInPoster>();
 // Job polling services
 builder.Services.AddHostedService<JobPoller>();
 builder.Services.AddSingleton<IJobSource, MockJobSource>();
+builder.Services.AddHttpClient<GreenhouseJobSource>();
+builder.Services.AddSingleton<IJobSource>(sp => sp.GetRequiredService<GreenhouseJobSource>());
 builder.Services.AddSingleton<IJobMatcher, SimpleJobMatcher>();
 builder.Services.AddSingleton<IJobApplyService, MockJobApplyService>();
 
