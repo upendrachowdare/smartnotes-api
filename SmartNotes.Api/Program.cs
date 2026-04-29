@@ -17,6 +17,13 @@ builder.Services.AddHttpClient<ILinkedInService, LinkedInService>();
 
 // Background service to create and post daily LinkedIn posts
 builder.Services.AddHostedService<DailyLinkedInPoster>();
+// Job polling services
+builder.Services.AddHostedService<JobPoller>();
+builder.Services.AddSingleton<IJobSource, MockJobSource>();
+builder.Services.AddSingleton<IJobMatcher, SimpleJobMatcher>();
+builder.Services.AddSingleton<IJobApplyService, MockJobApplyService>();
+
+// Configure poll interval in appsettings: JobPollIntervalMinutes (default 20)
 
 var app = builder.Build();
 
