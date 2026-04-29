@@ -48,6 +48,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Serve static dashboard
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 // Apply EF Core migrations / ensure database
 using (var scope = app.Services.CreateScope())
 {
