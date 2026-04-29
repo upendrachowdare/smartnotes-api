@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.EntityFrameworkCore;
+using SmartNotes.Api.Data;
 using SmartNotes.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,7 +25,18 @@ builder.Services.AddSingleton<IJobSource, MockJobSource>();
 builder.Services.AddHttpClient<GreenhouseJobSource>();
 builder.Services.AddSingleton<IJobSource>(sp => sp.GetRequiredService<GreenhouseJobSource>());
 builder.Services.AddSingleton<IJobMatcher, SimpleJobMatcher>();
-builder.Services.AddSingleton<IJobApplyService, MockJobApplyService>();
+// Persistence
+builder.Services.AddDbContext<SmartNotes.Api.Data.SmartNotesContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=smartnotes.db"));
+
+// Email sender (for approval notifications)
+builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
+
+// RSS connector
+builder.Services.AddSingleton<IRssJobSource, RssJobSource>();
+builder.Services.AddSingleton<IJobSource>(sp => sp.GetRequiredService<IRssJobSource>());
+
+// Use approval apply service that saves attempts and sends email
+builder.Services.AddSingleton<IJobApplyService, ApprovalJobApplyService>();
 
 // Configure poll interval in appsettings: JobPollIntervalMinutes (default 20)
 
@@ -33,6 +46,13 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+// Apply EF Core migrations / ensure database
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<SmartNotesContext>();
+    db.Database.Migrate();
 }
 
 app.UseHttpsRedirection();
