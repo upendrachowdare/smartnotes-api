@@ -13,7 +13,16 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // HttpClient-backed OpenAI service (reads OPENAI_API_KEY or OpenAI:ApiKey)
-builder.Services.AddHttpClient<IOpenAiService, OpenAiService>();
+// Use real OpenAI service when key provided, otherwise use a mock for local development
+var openAiKey = builder.Configuration["OpenAI:ApiKey"] ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+if (!string.IsNullOrEmpty(openAiKey))
+{
+    builder.Services.AddHttpClient<IOpenAiService, OpenAiService>();
+}
+else
+{
+    builder.Services.AddSingleton<IOpenAiService, MockOpenAiService>();
+}
 // LinkedIn HTTP client uses named client to include default headers if needed
 builder.Services.AddHttpClient<ILinkedInService, LinkedInService>();
 
